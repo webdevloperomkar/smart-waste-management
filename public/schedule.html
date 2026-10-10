@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule Pickup - EcoBin</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>🌱 EcoBin Platform</h1>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="report.html">Report Issue</a>
+            <a href="schedule.html">Schedule Pickup</a>
+            <a href="community.html">Community</a>
+            <a href="admin.html">Dashboard</a>
+        </nav>
+    </header>
+
+    <div class="form-container">
+        <h2>🚛 Schedule Doorstep Recycling Pickup</h2>
+        <p style="color: var(--text-muted);">Request a specialized pickup for e-waste, organic compost, or dry recyclables right at your door.</p>
+        
+        <form id="scheduleForm">
+            <label for="resident_name">Full Name:</label>
+            <input type="text" id="resident_name" required placeholder="e.g. Priya Sharma">
+
+            <label for="address">Pickup Address:</label>
+            <textarea id="address" rows="2" required placeholder="House/Flat No., Society Name, Area, City"></textarea>
+
+            <label for="phone">Phone Number:</label>
+            <input type="tel" id="phone" required placeholder="e.g. 9876543210">
+
+            <label for="waste_category">Waste Category:</label>
+            <select id="waste_category">
+                <option value="Dry Recyclables">Dry Recyclables (Paper, Cardboard, Plastic)</option>
+                <option value="E-Waste">E-Waste (Old Chargers, Laptops, Batteries)</option>
+                <option value="Organic Compost">Organic Waste / Compostables</option>
+                <option value="Household Hazardous">Household Hazardous (Chemicals, Medicines)</option>
+            </select>
+
+            <label for="preferred_date">Preferred Pickup Date:</label>
+            <input type="date" id="preferred_date" required>
+
+            <button type="submit">Confirm Pickup Schedule</button>
+        </form>
+        <p id="scheduleMsg" style="margin-top: 15px; font-weight: bold; text-align: center;"></p>
+    </div>
+
+    <script>
+        document.getElementById('scheduleForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                resident_name: document.getElementById('resident_name').value,
+                address: document.getElementById('address').value,
+                phone: document.getElementById('phone').value,
+                waste_category: document.getElementById('waste_category').value,
+                preferred_date: document.getElementById('preferred_date').value
+            };
+
+            const msg = document.getElementById('scheduleMsg');
+            msg.style.color = '#333';
+            msg.innerText = 'Scheduling your pickup...';
+
+            try {
+                const res = await fetch('/api/pickups', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    msg.style.color = 'green';
+                    msg.innerText = '✅ ' + result.message;
+                    document.getElementById('scheduleForm').reset();
+                } else {
+                    msg.style.color = 'red';
+                    msg.innerText = '❌ Failed to schedule pickup.';
+                }
+            } catch (err) {
+                console.error(err);
+                msg.style.color = 'red';
+                msg.innerText = '❌ Server connection error.';
+            }
+        });
+    </script>
+</body>
+</html>

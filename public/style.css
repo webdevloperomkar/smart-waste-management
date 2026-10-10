@@ -1,0 +1,163 @@
+:root {
+    --primary: #2e7d32;
+    --primary-dark: #1b5e20;
+    --accent: #81c784;
+    --bg-light: #f4f7f4;
+    --card-bg: #ffffff;
+    --text-dark: #2c3e50;
+    --text-muted: #666;
+    --shadow: 0 10px 20px rgba(0,0,0,0.08);
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+}
+
+/* Modern Header & Nav */
+header {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    padding: 1.2rem 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    margin-left: 20px;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+nav a:hover {
+    color: var(--accent);
+}
+
+/* Hero Section */
+.hero {
+    background: linear-gradient(rgba(46, 125, 50, 0.85), rgba(27, 94, 32, 0.85)), url('https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=1200&q=80') center/cover;
+    color: white;
+    text-align: center;
+    padding: 60px 20px;
+    margin-bottom: 40px;
+}
+
+.hero h2 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+/* Card Grid layout for Home Page */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    max-width: 1200px;
+    margin: 0 auto 50px auto;
+    padding: 0 20px;
+}
+
+.card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: var(--shadow);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.12);
+}
+
+.card h3 {
+    color: var(--primary);
+    margin-top: 0;
+}
+
+.card p {
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.card-btn {
+    display: inline-block;
+    background-color: var(--primary);
+    color: white;
+    text-decoration: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-weight: 600;
+    text-align: center;
+    margin-top: 15px;
+    transition: background 0.2s;
+}
+
+.card-btn:hover {
+    background-color: var(--primary-dark);
+}
+
+/* Forms Container */
+.form-container {
+    max-width: 650px;
+    margin: 40px auto;
+    background: white;
+    padding: 35px;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+}
+
+form label {
+    display: block;
+    margin-top: 15px;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+form input, form select, form textarea {
+    width: 100%;
+    padding: 12px;
+    margin-top: 6px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 1rem;
+}
+
+form input[type="file"] {
+    background-color: #fafafa;
+    padding: 8px;
+}
+
+button[type="submit"] {
+    width: 100%;
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    padding: 14px;
+    margin-top: 25px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+button[type="submit"]:hover {
+    background-color: var(--primary-dark);
+}

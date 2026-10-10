@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Waste - EcoBin</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        #map {
+            width: 100%;
+            height: 280px;
+            border-radius: 8px;
+            margin-top: 6px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🌱 EcoBin Platform</h1>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="report.html">Report Issue</a>
+            <a href="schedule.html">Schedule Pickup</a>
+            <a href="community.html">Community</a>
+            <a href="admin.html">Dashboard</a>
+        </nav>
+    </header>
+
+    <div class="form-container">
+        <h2>📸 Report Waste Hotspot with Map Pin</h2>
+        <p style="color: var(--text-muted);">Click on the map below to pin the exact location of the waste site.</p>
+        
+        <form id="reportForm" enctype="multipart/form-data">
+            <label for="user_name">Your Name:</label>
+            <input type="text" id="user_name" name="user_name" required placeholder="e.g. Alex Smith">
+
+            <label>Pin Location on Map (Click to select):</label>
+            <div id="map"></div>
+
+            <label for="location">Selected Location Coordinates / Landmark:</label>
+            <input type="text" id="location" name="location" required placeholder="Click on the map above to auto-fill coordinates">
+
+            <label for="waste_type">Waste Category:</label>
+            <select id="waste_type" name="waste_type">
+                <option value="Plastic/Dry">Plastic / Dry Recyclable</option>
+                <option value="Organic/Wet">Organic / Wet Waste</option>
+                <option value="E-Waste">Electronic Waste (E-Waste)</option>
+                <option value="Hazardous">Hazardous / Medical Waste</option>
+            </select>
+
+            <label for="waste_image">Upload Waste Site Image:</label>
+            <input type="file" id="waste_image" name="waste_image" accept="image/*" required>
+
+            <label for="description">Additional Details:</label>
+            <textarea id="description" name="description" rows="3" placeholder="Provide extra details (e.g., bin overflowing for 2 days)"></textarea>
+
+            <button type="submit">Submit Incident Report</button>
+        </form>
+        <p id="responseMsg" style="margin-top: 15px; font-weight: bold; text-align: center;"></p>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // 1. Initialize Map centered on Pune
+        const map = L.map('map').setView([18.5204, 73.8567], 13);
+
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let marker;
+
+        // 2. Listen for clicks on the map to place/move marker
+        map.on('click', (e) => {
+            const lat = e.latlng.lat.toFixed(4);
+            const lng = e.latlng.lng.toFixed(4);
+
+            if (marker) {
+                marker.setLatLng(e.latlng);
+            } else {
+                marker = L.marker(e.latlng).addTo(map);
+            }
+
+            // Auto-fill the location input field with coordinates
+            document.getElementById('location').value = `Coordinates: [${lat}, ${lng}]`;
+        });
+
+        // 3. Handle Form Submission
+        document.getElementById('reportForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('user_name', document.getElementById('user_name').value);
+            formData.append('location', document.getElementById('location').value);
+            formData.append('waste_type', document.getElementById('waste_type').value);
+            formData.append('description', document.getElementById('description').value);
+            formData.append('waste_image', document.getElementById('waste_image').files[0]);
+
+            const msg = document.getElementById('responseMsg');
+            msg.style.color = '#333';
+            msg.innerText = 'Uploading report...';
+
+            try {
+                const res = await fetch('/api/reports', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    msg.style.color = 'green';
+                    msg.innerText = '✅ ' + result.message;
+                    document.getElementById('reportForm').reset();
+                    if (marker) {
+                        map.removeLayer(marker);
+                        marker = null;
+                    }
+                } else {
+                    msg.style.color = 'red';
+                    msg.innerText = '❌ Failed to submit report.';
+                }
+            } catch (err) {
+                console.error(err);
+                msg.style.color = 'red';
+                msg.innerText = '❌ Server connection error.';
+            }
+        });
+    </script>
+</body>
+</html>

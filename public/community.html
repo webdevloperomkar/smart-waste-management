@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Hub - EcoBin</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .community-container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .stats-banner {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+        .stat-card h3 {
+            font-size: 2rem;
+            color: var(--primary);
+            margin: 0;
+        }
+        .stat-card p {
+            margin: 5px 0 0;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .section-box {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .leaderboard-table th, .leaderboard-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .leaderboard-table th {
+            background-color: #f8f9fa;
+            color: var(--primary);
+        }
+        .event-card {
+            border-left: 4px solid var(--primary);
+            padding: 12px 15px;
+            background: #f9fbf9;
+            margin-bottom: 15px;
+            border-radius: 0 8px 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🌱 EcoBin Platform</h1>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="report.html">Report Issue</a>
+            <a href="schedule.html">Schedule Pickup</a>
+            <a href="community.html">Community</a>
+            <a href="admin.html">Dashboard</a>
+        </nav>
+    </header>
+
+    <div class="community-container">
+        <h2>🏆 Community Engagement Hub</h2>
+        <p style="color: var(--text-muted);">Live data driven by real citizen reports, schedules, and community events.</p>
+
+        <!-- Dynamic Impact Statistics Banner -->
+        <div class="stats-banner">
+            <div class="stat-card">
+                <h3 id="statTotalReports">0</h3>
+                <p>Total Incidents Reported</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="statResolved">0</h3>
+                <p>Hotspots Resolved</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="statPickups">0</h3>
+                <p>Doorstep Pickups</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="statPoints">0</h3>
+                <p>Community Eco-Points</p>
+            </div>
+        </div>
+
+        <!-- Dynamic Leaderboard Section -->
+        <div class="section-box">
+            <h3 style="color: var(--primary); margin-top: 0;">🥇 Society Leaderboard</h3>
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Society / Area Name</th>
+                        <th>Incidents Resolved</th>
+                        <th>Eco-Points Earned</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardBody">
+                    <tr><td colspan="4" style="text-align: center;">Loading live scores from database...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Create & View Community Events -->
+        <div class="section-box">
+            <h3 style="color: var(--primary); margin-top: 0;">➕ Organize a Clean-Up Drive</h3>
+            <form id="eventForm" style="margin-bottom: 30px;">
+                <label>Event Title:</label>
+                <input type="text" id="event_title" required placeholder="e.g., Weekend Lake Cleanup Drive">
+
+                <label>Location / Venue:</label>
+                <input type="text" id="event_location" required placeholder="e.g., Central Park Main Gate">
+
+                <label>Date & Time:</label>
+                <input type="text" id="event_date" required placeholder="e.g., Next Saturday at 9:00 AM">
+
+                <label>Reward Eco-Points:</label>
+                <input type="number" id="bonus_points" value="50">
+
+                <button type="submit" style="width: auto; margin-top: 15px;">Publish Drive to Community</button>
+            </form>
+            <p id="eventMsg" style="font-weight: bold;"></p>
+
+            <h3 style="color: var(--primary);">📅 Upcoming Drives & Events</h3>
+            <div id="eventsContainer">
+                <p style="color: var(--text-muted);">Loading upcoming events...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load Live Data from MySQL Database
+        async function loadCommunityData() {
+            try {
+                // 1. Fetch Stats & Leaderboard
+                const statsRes = await fetch('/api/community/stats');
+                const statsData = await statsRes.json();
+
+                document.getElementById('statTotalReports').innerText = statsData.stats.total_reports || 0;
+                document.getElementById('statResolved').innerText = statsData.stats.resolved_reports || 0;
+                document.getElementById('statPickups').innerText = statsData.stats.total_pickups || 0;
+                document.getElementById('statPoints').innerText = statsData.stats.total_points || 0;
+
+                const leaderboardBody = document.getElementById('leaderboardBody');
+                if (statsData.leaderboard.length === 0) {
+                    leaderboardBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No society data yet. Submit and resolve reports to start earning points!</td></tr>`;
+                } else {
+                    leaderboardBody.innerHTML = statsData.leaderboard.map((item, index) => `
+                        <tr>
+                            <td>${index === 0 ? '🥇 1' : index === 1 ? '🥈 2' : index === 2 ? '🥉 3' : index + 1}</td>
+                            <td>${item.society_name}</td>
+                            <td>${item.reports_resolved}</td>
+                            <td><strong>${item.eco_points} pts</strong></td>
+                        </tr>
+                    `).join('');
+                }
+
+                // 2. Fetch Events
+                const eventsRes = await fetch('/api/events');
+                const events = await eventsRes.json();
+                const eventsContainer = document.getElementById('eventsContainer');
+
+                if (events.length === 0) {
+                    eventsContainer.innerHTML = '<p style="color: var(--text-muted);">No community drives scheduled yet. Be the first to create one above!</p>';
+                } else {
+                    eventsContainer.innerHTML = events.map(evt => `
+                        <div class="event-card">
+                            <h4 style="margin: 0; color: #2c3e50;">${evt.title}</h4>
+                            <p style="margin: 5px 0; color: var(--text-muted);">📍 ${evt.location} | 🗓️ ${evt.event_date}</p>
+                            <small style="color: var(--primary); font-weight: bold;">Earn ${evt.bonus_points} Bonus Eco-Points for participating!</small>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error('Error fetching data:', err);
+            }
+        }
+
+        // Handle Posting New Community Event
+        document.getElementById('eventForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                title: document.getElementById('event_title').value,
+                location: document.getElementById('event_location').value,
+                event_date: document.getElementById('event_date').value,
+                bonus_points: document.getElementById('bonus_points').value
+            };
+
+            const res = await fetch('/api/events', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+
+            const msg = document.getElementById('eventMsg');
+            if (result.success) {
+                msg.style.color = 'green';
+                msg.innerText = '✅ ' + result.message;
+                document.getElementById('eventForm').reset();
+                loadCommunityData(); // Refresh UI dynamically
+            } else {
+                msg.style.color = 'red';
+                msg.innerText = '❌ Error publishing drive.';
+            }
+        });
+
+        // Initialize on page load
+        loadCommunityData();
+    </script>
+</body>
+</html>

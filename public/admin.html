@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - EcoBin</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js for Analytics Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .admin-container {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .analytics-section {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+        .analytics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .export-btn {
+            background-color: #1b5e20;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .export-btn:hover {
+            background-color: #2e7d32;
+        }
+        .chart-container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .report-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: 150px 1fr auto;
+            gap: 20px;
+            align-items: center;
+        }
+        .report-img {
+            width: 150px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 6px;
+            background: #eee;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        .status-pending { background: #ffeeba; color: #856404; }
+        .status-resolved { background: #d4edda; color: #155724; }
+        .resolve-btn {
+            background-color: #2e7d32;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .resolve-btn:hover { background-color: #1b5e20; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🌱 EcoBin Platform</h1>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="report.html">Report Issue</a>
+            <a href="schedule.html">Schedule Pickup</a>
+            <a href="community.html">Community</a>
+            <a href="admin.html">Dashboard</a>
+        </nav>
+    </header>
+
+    <div class="admin-container">
+        <h2>📊 Municipal & Admin Control Dashboard</h2>
+        <p style="color: var(--text-muted);">Monitor analytics, export municipal records, and manage waste reports.</p>
+
+        <!-- Analytics & Export Section -->
+        <div class="analytics-section">
+            <div class="analytics-header">
+                <h3 style="margin: 0; color: var(--primary);">📈 Waste Category Analytics</h3>
+                <button class="export-btn" onclick="exportReportsCSV()">📥 Export Reports to CSV</button>
+            </div>
+            <div class="chart-container">
+                <canvas id="wasteChart"></canvas>
+            </div>
+        </div>
+
+        <h3 style="color: var(--primary);">📋 All Submitted Incident Reports</h3>
+        <div id="reportsList" style="margin-top: 15px;">
+            <p>Loading reports...</p>
+        </div>
+    </div>
+
+    <script>
+        let reportsData = [];
+        let wasteChartInstance = null;
+
+        async function loadAdminData() {
+            try {
+                const res = await fetch('/api/reports');
+                reportsData = await res.json();
+                
+                renderReportsList(reportsData);
+                renderAnalyticsChart(reportsData);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function renderReportsList(reports) {
+            const container = document.getElementById('reportsList');
+
+            if (reports.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted);">No reports submitted yet.</p>';
+                return;
+            }
+
+            container.innerHTML = reports.map(r => `
+                <div class="report-card">
+                    <div>
+                        ${r.image_url ? `<img src="${r.image_url}" class="report-img" alt="Waste Image">` : `<div class="report-img" style="display:flex;align-items:center;justify-content:center;color:#999;font-size:0.8rem;">No Image</div>`}
+                    </div>
+                    <div>
+                        <h3 style="margin: 0 0 5px 0; color: var(--text-dark);">${r.waste_type}</h3>
+                        <p style="margin: 3px 0; color: var(--text-muted);"><strong>Location:</strong> ${r.location}</p>
+                        <p style="margin: 3px 0; color: var(--text-muted);"><strong>Reported By:</strong> ${r.user_name}</p>
+                        <p style="margin: 3px 0; color: var(--text-muted);"><strong>Details:</strong> ${r.description || 'None'}</p>
+                        <p style="margin: 8px 0 0 0;">
+                            <span class="status-badge ${r.status === 'Resolved' ? 'status-resolved' : 'status-pending'}">
+                                Status: ${r.status || 'Pending'}
+                            </span>
+                        </p>
+                    </div>
+                    <div>
+                        ${r.status !== 'Resolved' ? `<button class="resolve-btn" onclick="resolveReport(${r.id})">Mark Resolved</button>` : `<span style="color:green;font-weight:bold;">✔ Completed</span>`}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderAnalyticsChart(reports) {
+            const counts = {};
+            reports.forEach(r => {
+                const type = r.waste_type || 'Other';
+                counts[type] = (counts[type] || 0) + 1;
+            });
+
+            const labels = Object.keys(counts);
+            const data = Object.values(counts);
+
+            const ctx = document.getElementById('wasteChart').getContext('2d');
+            
+            if (wasteChartInstance) {
+                wasteChartInstance.destroy();
+            }
+
+            wasteChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Reports Count',
+                        data: data,
+                        backgroundColor: ['#2e7d32', '#81c784', '#ffb74d', '#e57373', '#64b5f6'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                generateLabels: (chart) => {
+                                    const data = chart.data;
+                                    if (data.labels.length && data.datasets.length) {
+                                        const dataset = data.datasets[0];
+                                        const total = dataset.data.reduce((acc, val) => acc + val, 0);
+                                        
+                                        return data.labels.map((label, i) => {
+                                            const value = dataset.data[i];
+                                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                            return {
+                                                text: `${label}: ${value} (${percentage}%)`,
+                                                fillStyle: dataset.backgroundColor[i],
+                                                strokeStyle: dataset.backgroundColor[i],
+                                                lineWidth: 1,
+                                                hidden: isNaN(dataset.data[i]) || chart.getDatasetMeta(0).data[i].hidden,
+                                                index: i
+                                            };
+                                        });
+                                    }
+                                    return [];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function resolveReport(id) {
+            const res = await fetch(`/api/reports/${id}/resolve`, { method: 'PUT' });
+            const result = await res.json();
+            if (result.success) {
+                alert('Success! Points credited to leaderboard.');
+                loadAdminData();
+            } else {
+                alert('Failed to update report.');
+            }
+        }
+
+        function exportReportsCSV() {
+            if (reportsData.length === 0) {
+                alert('No data available to export.');
+                return;
+            }
+
+            let csvContent = 'data:text/csv;charset=utf-8,ID,User,Location,Waste Type,Status,Date\r\n';
+            
+            reportsData.forEach(r => {
+                const row = [r.id, `"${r.user_name}"`, `"${r.location}"`, `"${r.waste_type}"`, r.status || 'Pending', r.created_at];
+                csvContent += row.join(',') + '\r\n';
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', 'eco_bin_reports_export.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        loadAdminData();
+    </script>
+</body>
+</html>
